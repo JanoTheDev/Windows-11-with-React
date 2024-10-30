@@ -12,7 +12,13 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+      backdropBlur: {
+        md: "12px",
+      },
     },
+  },
+  variants: {
+    backdropBlur: ["responsive"], // Make sure it's responsive
   },
   plugins: [],
 };
