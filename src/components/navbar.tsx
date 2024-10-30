@@ -17,7 +17,7 @@ export default function Navbar() {
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
 
-  const [lastBroughtToFront, setLastBroughtToFront] = useAtom(
+  const [, setLastBroughtToFront] = useAtom(
     lastBroughtToFrontAtom
   );
 
