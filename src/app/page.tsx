@@ -1,12 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Navbar, { AppsAtoms } from "../components/navbar";
 import { useAtom } from "jotai";
 import NotePad from "@/components/notepad";
 
 export default function Home() {
-  const [apps, setApps] = useAtom(AppsAtoms);
+  // const [apps, setApps] = useAtom(AppsAtoms);
   return (
     <div className="h-screen w-screen overflow-hidden relative">
       <div className="flex flex-col gap-3 m-2 absolute inset-0">
