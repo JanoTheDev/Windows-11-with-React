@@ -33,12 +33,13 @@ export default function NotePad({ id }: NotePadProps) {
   const [apps, setApps] = useAtom(AppsAtoms);
 
   const [windowSize, setWindowSize] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: typeof window !== "undefined" ? window.innerWidth : 0,
+    height: typeof window !== "undefined" ? window.innerHeight : 0,
   });
 
   useEffect(() => {
-    // Function to update state with new window size
+    if (typeof window === "undefined") return;
+
     const handleResize = () => {
       setWindowSize({
         width: window.innerWidth,
@@ -46,10 +47,8 @@ export default function NotePad({ id }: NotePadProps) {
       });
     };
 
-    // Add event listener for window resize
     window.addEventListener("resize", handleResize);
-
-    // Cleanup the event listener on component unmount
+    handleResize();
     return () => {
       window.removeEventListener("resize", handleResize);
     };
@@ -238,7 +237,11 @@ export default function NotePad({ id }: NotePadProps) {
               }}
               className="bg-white rounded-lg shadow-lg"
             >
-              <div className="flex flex-col h-full" onMouseDown={bringToFront} onClick={bringToFront}>
+              <div
+                className="flex flex-col h-full"
+                onMouseDown={bringToFront}
+                onClick={bringToFront}
+              >
                 <div className="handle flex justify-between items-center bg-blue-500 text-white p-2 rounded-t-lg cursor-move">
                   <h3 className="text-lg font-semibold">NotePad {id}</h3>
                   <div className="flex items-center justify-end gap-6">
