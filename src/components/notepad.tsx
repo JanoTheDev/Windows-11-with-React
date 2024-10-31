@@ -16,75 +16,69 @@ export const lastBroughtToFrontAtom = atom<number | null>(null);
 
 export default function NotePad({ id }: NotePadProps) {
   const [isOpen, setIsOpen] = useState(false);
-
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [size, setSize] = useState({ width: 256, height: 200 });
-
   const [oldsize, setOldSize] = useState({ width: 256, height: 200 });
   const [oldposition, setOldPosition] = useState({ x: 0, y: 0 });
-
   const [zIndex, setZIndex] = useState(1000);
   const nodeRef = useRef(null);
 
   const [lastBroughtToFront, setLastBroughtToFront] = useAtom(
     lastBroughtToFrontAtom
   );
-
   const [apps, setApps] = useAtom(AppsAtoms);
 
   const [windowSize, setWindowSize] = useState({
-    width: typeof window !== "undefined" ? window.innerWidth : 0,
-    height: typeof window !== "undefined" ? window.innerHeight : 0,
+    width: 0,
+    height: 0,
   });
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window !== "undefined") {
+      const handleResize = () => {
+        setWindowSize({
+          width: window.innerWidth,
+          height: window.innerHeight,
+        });
+      };
 
-    const handleResize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
+      handleResize();
+      window.addEventListener("resize", handleResize);
 
-    window.addEventListener("resize", handleResize);
-    handleResize();
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
+      return () => {
+        window.removeEventListener("resize", handleResize);
+      };
+    }
   }, []);
 
-  const openPopup = useCallback(
-    (openId?: number) => {
-      const currentId = openId ?? id;
-      if (apps) {
-        setApps((prev) => {
-          const isPositionTaken = prev.some((app) => app.id === currentId);
+  const openPopup = useCallback(() => {
+    if (apps) {
+      setApps((prev) => {
+        const isPositionTaken = prev.some((app) => app.id === id);
 
-          if (!isPositionTaken) {
-            setIsOpen(true);
-            bringToFront();
-            setPosition({
-              x: currentId * 20,
-              y: currentId * 20,
-            });
-            return [
-              ...prev,
-              {
-                id: currentId,
-                position: position,
-                name: "Notepad",
-                link: "https://i.postimg.cc/fLK4gSV6/Notepad-Win11.png",
-              },
-            ];
-          }
+        if (!isPositionTaken) {
+          setIsOpen(true);
+          const newPosition = { x: id * 20, y: id * 20 };
+          setPosition(newPosition);
+          const newZIndex =
+            Math.max(...prev.map((app) => app.zIndex), 1000) + 1;
+          setZIndex(newZIndex);
+          return [
+            ...prev,
+            {
+              id,
+              position: newPosition,
+              name: "Notepad",
+              link: "https://i.postimg.cc/fLK4gSV6/Notepad-Win11.png",
+              zIndex: newZIndex,
+            },
+          ];
+        }
 
-          return prev;
-        });
-      }
-    },
-    [id, apps]
-  );
+        return prev;
+      });
+    }
+  }, [id, apps, setApps]);
 
   const closePopup = useCallback(() => {
     setApps((prev) => prev.filter((app) => app.id !== id));
@@ -98,21 +92,29 @@ export default function NotePad({ id }: NotePadProps) {
   const handleDrag = useCallback(
     (e: any, data: any) => {
       bringToFront();
-      setPosition({ x: data.x, y: data.y });
+      const newPosition = { x: data.x, y: data.y };
+      setPosition(newPosition);
 
       setApps((prevApps) => {
         const updatedApps = prevApps.map((app) =>
-          app.id === id ? { ...app, position: position } : app
+          app.id === id ? { ...app, position: newPosition } : app
         );
         return updatedApps;
       });
     },
-    [apps, id]
+    [id, setApps]
   );
 
   const bringToFront = useCallback(() => {
-    setZIndex((prevZIndex) => Math.max(prevZIndex, 1000) + 1);
-  }, [apps, lastBroughtToFront]);
+    setApps((prevApps) => {
+      const maxZIndex = Math.max(...prevApps.map((app) => app.zIndex), 1000);
+      const newZIndex = maxZIndex + 1;
+      setZIndex(newZIndex);
+      return prevApps.map((app) =>
+        app.id === id ? { ...app, zIndex: newZIndex } : app
+      );
+    });
+  }, [id, setApps]);
 
   const FullScreenHandle = useCallback(() => {
     bringToFront();
@@ -120,77 +122,34 @@ export default function NotePad({ id }: NotePadProps) {
       size.width === windowSize.width &&
       size.height === windowSize.height - 50
     ) {
-      bringToFront();
       setSize(oldsize);
-      setApps((prevApps) => {
-        const updatedApps = prevApps.map((app) =>
-          app.id === id ? { ...app, position: oldposition } : app
-        );
-        setPosition(oldposition);
-        return updatedApps;
-      });
+      setPosition(oldposition);
     } else {
-      bringToFront();
       setOldPosition(position);
       setOldSize(size);
-
       setSize({ width: windowSize.width, height: windowSize.height - 50 });
-      setApps((prevApps) => {
-        const updatedApps = prevApps.map((app) =>
-          app.id === id ? { ...app, position: { x: 0, y: 0 } } : app
-        );
-        setPosition({ x: 0, y: 0 });
-        return updatedApps;
-      });
+      setPosition({ x: 0, y: 0 });
     }
-  }, [size, position, windowSize]);
+    setApps((prevApps) =>
+      prevApps.map((app) => (app.id === id ? { ...app, position, size } : app))
+    );
+  }, [size, position, windowSize, oldsize, oldposition, id, setApps]);
 
   useEffect(() => {
-    if (!lastBroughtToFront || lastBroughtToFront !== id) return;
-    console.log(lastBroughtToFront, id);
-    const appToUpdate = apps.find((app) => app.id === id);
-    if (appToUpdate) {
-      setPosition(appToUpdate.position);
-      bringToFront();
-
+    if (lastBroughtToFront === id) {
+      const appToUpdate = apps.find((app) => app.id === id);
+      if (appToUpdate) {
+        setPosition(appToUpdate.position);
+        setZIndex(appToUpdate.zIndex);
+      }
       setLastBroughtToFront(null);
     }
-  }, [id, apps, lastBroughtToFront, bringToFront]); // Include id as a dependency
-
-  //   const handleResize = useCallback(
-  //     (
-  //       e: MouseEvent | TouchEvent,
-  //       direction: any,
-  //       elementRef: HTMLElement,
-  //       delta: { width: number; height: number }
-  //     ) => {
-  //       const { width, height } = delta;
-
-  //       setSize((prevSize) => ({
-  //         width: prevSize.width + width,
-  //         height: prevSize.height + height,
-  //       }));
-
-  //       if (direction.includes("left")) {
-  //         setPosition((prevPos) => ({
-  //           x: prevPos.x - width,
-  //           y: prevPos.y,
-  //         }));
-  //       }
-  //       if (direction.includes("top")) {
-  //         setPosition((prevPos) => ({
-  //           x: prevPos.x,
-  //           y: prevPos.y - height,
-  //         }));
-  //       }
-  //     },
-  //     []
-  //   );
+  }, [id, apps, lastBroughtToFront, setLastBroughtToFront]);
 
   return (
     <>
       <button
-        onDoubleClick={() => openPopup()}
+        onDoubleClick={openPopup}
         className="w-[70px] px-1 py-2 focus:outline-none focus:bg-white rounded-md focus:bg-opacity-20 text-white hover:bg-white hover:bg-opacity-20"
         aria-label="Open NotePad"
       >
@@ -226,14 +185,18 @@ export default function NotePad({ id }: NotePadProps) {
               minHeight={100}
               maxWidth={windowSize.width}
               maxHeight={windowSize.height}
-              onResizeStart={() => {
-                bringToFront();
-              }}
+              onResizeStart={bringToFront}
               onResizeStop={(e, direction, ref, d) => {
-                setSize({
+                const newSize = {
                   width: size.width + d.width,
                   height: size.height + d.height,
-                });
+                };
+                setSize(newSize);
+                setApps((prevApps) =>
+                  prevApps.map((app) =>
+                    app.id === id ? { ...app, size: newSize } : app
+                  )
+                );
               }}
               className="bg-white rounded-lg shadow-lg"
             >
