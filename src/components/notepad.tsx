@@ -1,9 +1,7 @@
-"use client";
-
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import Draggable from "react-draggable";
-import { Resizable } from "re-resizable";
-import { Square, X } from "lucide-react";
+import { Resizable, Enable } from "re-resizable"; // Import the correct type for Enable
+import { Maximize2, Minimize2, X, Plus } from "lucide-react";
 import { AppsAtoms } from "./navbar";
 import { atom, useAtom } from "jotai";
 import Image from "next/image";
@@ -12,16 +10,28 @@ interface NotePadProps {
   id: number;
 }
 
+interface Tab {
+  id: number;
+  title: string;
+  content: string;
+}
+
 export const lastBroughtToFrontAtom = atom<number | null>(null);
 
 export default function NotePad({ id }: NotePadProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [size, setSize] = useState({ width: 256, height: 200 });
-  const [oldsize, setOldSize] = useState({ width: 256, height: 200 });
-  const [oldposition, setOldPosition] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({ x: 20, y: 20 });
+  const [size, setSize] = useState({ width: 600, height: 400 });
+  const [oldsize, setOldSize] = useState({ width: 600, height: 400 });
+  const [oldposition, setOldPosition] = useState({ x: 20, y: 20 });
   const [zIndex, setZIndex] = useState(1000);
+  const [tabs, setTabs] = useState<Tab[]>([
+    { id: 1, title: "Untitled", content: "" },
+  ]);
+  const [activeTab, setActiveTab] = useState(1);
+  const [isMaximized, setIsMaximized] = useState(false);
   const nodeRef = useRef(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [lastBroughtToFront, setLastBroughtToFront] = useAtom(
     lastBroughtToFrontAtom
@@ -29,8 +39,8 @@ export default function NotePad({ id }: NotePadProps) {
   const [apps, setApps] = useAtom(AppsAtoms);
 
   const [windowSize, setWindowSize] = useState({
-    width: 0,
-    height: 0,
+    width: typeof window !== "undefined" ? window.innerWidth : 0,
+    height: typeof window !== "undefined" ? window.innerHeight : 0,
   });
 
   useEffect(() => {
@@ -83,10 +93,11 @@ export default function NotePad({ id }: NotePadProps) {
   const closePopup = useCallback(() => {
     setApps((prev) => prev.filter((app) => app.id !== id));
     setIsOpen(false);
-    setSize({ width: 256, height: 200 });
-    setPosition({ x: 0, y: 0 });
-    setOldSize({ width: 256, height: 200 });
-    setOldPosition({ x: 0, y: 0 });
+    setSize({ width: 600, height: 400 });
+    setPosition({ x: 20, y: 20 });
+    setOldSize({ width: 600, height: 400 });
+    setOldPosition({ x: 20, y: 20 });
+    setIsMaximized(false);
   }, [id, setApps]);
 
   const handleDrag = useCallback(
@@ -105,6 +116,10 @@ export default function NotePad({ id }: NotePadProps) {
     [id, setApps]
   );
 
+  const handleStop = useCallback((e: any, data: any) => {
+    setPosition({ x: data.x, y: data.y });
+  }, []);
+
   const bringToFront = useCallback(() => {
     setApps((prevApps) => {
       const maxZIndex = Math.max(...prevApps.map((app) => app.zIndex), 1000);
@@ -118,18 +133,18 @@ export default function NotePad({ id }: NotePadProps) {
 
   const FullScreenHandle = useCallback(() => {
     bringToFront();
-    if (
-      size.width === windowSize.width &&
-      size.height === windowSize.height - 50
-    ) {
-      setSize(oldsize);
-      setPosition(oldposition);
-    } else {
-      setOldPosition(position);
-      setOldSize(size);
-      setSize({ width: windowSize.width, height: windowSize.height - 50 });
-      setPosition({ x: 0, y: 0 });
-    }
+    setIsMaximized((prev) => {
+      if (!prev) {
+        setOldPosition(position);
+        setOldSize(size);
+        setSize({ width: windowSize.width, height: windowSize.height - 50 });
+        setPosition({ x: 0, y: 0 });
+      } else {
+        setSize(oldsize);
+        setPosition(oldposition);
+      }
+      return !prev;
+    });
     setApps((prevApps) =>
       prevApps.map((app) => (app.id === id ? { ...app, position, size } : app))
     );
@@ -145,6 +160,37 @@ export default function NotePad({ id }: NotePadProps) {
       setLastBroughtToFront(null);
     }
   }, [id, apps, lastBroughtToFront, setLastBroughtToFront]);
+
+  useEffect(() => {
+    if (isOpen && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [isOpen, activeTab]);
+
+  const addNewTab = () => {
+    const newTabId = Math.max(...tabs.map((tab) => tab.id), 0) + 1;
+    setTabs([
+      ...tabs,
+      { id: newTabId, title: `Untitled ${newTabId}`, content: "" },
+    ]);
+    setActiveTab(newTabId);
+  };
+
+  const closeTab = (tabId: number) => {
+    if (tabs.length > 1) {
+      const newTabs = tabs.filter((tab) => tab.id !== tabId);
+      setTabs(newTabs);
+      if (activeTab === tabId) {
+        setActiveTab(newTabs[newTabs.length - 1].id);
+      }
+    }
+  };
+
+  const updateTabContent = (content: string) => {
+    setTabs(
+      tabs.map((tab) => (tab.id === activeTab ? { ...tab, content } : tab))
+    );
+  };
 
   return (
     <>
@@ -170,64 +216,124 @@ export default function NotePad({ id }: NotePadProps) {
           nodeRef={nodeRef}
           position={position}
           onDrag={handleDrag}
+          onStop={handleStop} // Add the onStop handler
           bounds="parent"
           handle=".handle"
+          disabled={isMaximized}
         >
           <div
             ref={nodeRef}
-            style={{ position: "absolute", zIndex }}
+            style={{
+              position: "absolute",
+              zIndex,
+              transition: "transform 0.2s ease-in-out",
+              width: isMaximized ? "100%" : `${size.width}px`,
+              height: isMaximized ? "100%" : `${size.height}px`,
+              left: isMaximized ? "0" : `${position.x}px`,
+              top: isMaximized ? "0" : `${position.y}px`,
+            }}
             onMouseDown={bringToFront}
             onClick={bringToFront}
           >
             <Resizable
-              size={{ width: size.width, height: size.height }}
-              minWidth={200}
-              minHeight={100}
-              maxWidth={windowSize.width}
-              maxHeight={windowSize.height}
-              onResizeStart={bringToFront}
+              size={size}
               onResizeStop={(e, direction, ref, d) => {
-                const newSize = {
-                  width: size.width + d.width,
-                  height: size.height + d.height,
-                };
-                setSize(newSize);
-                setApps((prevApps) =>
-                  prevApps.map((app) =>
-                    app.id === id ? { ...app, size: newSize } : app
-                  )
-                );
+                setSize((prevSize) => ({
+                  width: prevSize.width + d.width,
+                  height: prevSize.height + d.height,
+                }));
               }}
-              className="bg-white rounded-lg shadow-lg"
+              enable={
+                !isMaximized
+                  ? {
+                      top: true,
+                      right: true,
+                      bottom: true,
+                      left: true,
+                      topRight: true,
+                      bottomRight: true,
+                      bottomLeft: true,
+                      topLeft: true,
+                    }
+                  : false
+              }
             >
-              <div
-                className="flex flex-col h-full"
-                onMouseDown={bringToFront}
-                onClick={bringToFront}
-              >
-                <div className="handle flex justify-between items-center bg-blue-500 text-white p-2 rounded-t-lg cursor-move">
-                  <h3 className="text-lg font-semibold">NotePad {id}</h3>
-                  <div className="flex items-center justify-end gap-6">
+              <div className="flex flex-col h-full">
+                <div className="handle flex justify-between items-center bg-gray-200 text-black p-1 rounded-t-lg cursor-move">
+                  <div className="flex items-center space-x-2 px-2">
+                    <Image
+                      src="https://i.postimg.cc/fLK4gSV6/Notepad-Win11.png"
+                      alt="Notepad"
+                      width={16}
+                      height={16}
+                    />
+                    <h3 className="text-sm font-semibold">Notepad</h3>
+                  </div>
+                  <div className="flex items-center space-x-2">
                     <button
                       onClick={FullScreenHandle}
-                      className="focus:outline-none hover:text-gray-200 transition-colors"
-                      aria-label="FullScreen NotePad"
+                      className="focus:outline-none hover:bg-gray-300 p-1 rounded"
+                      aria-label="Maximize NotePad"
                     >
-                      <Square className="w-5 h-5" />
+                      {size.width === windowSize.width &&
+                      size.height === windowSize.height - 50 ? (
+                        <Minimize2 size={16} />
+                      ) : (
+                        <Maximize2 size={16} />
+                      )}
                     </button>
                     <button
                       onClick={closePopup}
-                      className="focus:outline-none hover:text-gray-200 transition-colors"
+                      className="focus:outline-none hover:bg-red-500 hover:text-white p-1 rounded"
                       aria-label="Close NotePad"
                     >
-                      <X className="w-5 h-5" />
+                      <X size={16} />
                     </button>
                   </div>
                 </div>
-                <div className="p-4 flex-1 overflow-auto">
-                  <p>Drag from the header</p>
-                  <p>Click to bring to front</p>
-                  <p>Resize from any edge or corner</p>
+                <div className="flex bg-gray-100 border-b border-gray-300">
+                  {tabs.map((tab) => (
+                    <div
+                      key={tab.id}
+                      className={`flex items-center px-3 py-1 border-r border-gray-300 cursor-pointer ${
+                        activeTab === tab.id
+                          ? "bg-white"
+                          : "bg-gray-100 hover:bg-gray-200"
+                      }`}
+                      onClick={() => setActiveTab(tab.id)}
+                    >
+                      <span className="mr-2">{tab.title}</span>
+                      {tabs.length > 1 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            closeTab(tab.id);
+                          }}
+                          className="focus:outline-none hover:bg-gray-300 rounded-full p-1"
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    onClick={addNewTab}
+                    className="px-3 py-1 hover:bg-gray-200 focus:outline-none"
+                    aria-label="Add new tab"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <textarea
+                    ref={textareaRef}
+                    value={
+                      tabs.find((tab) => tab.id === activeTab)?.content || ""
+                    }
+                    onChange={(e) => updateTabContent(e.target.value)}
+                    className="w-full h-full resize-none p-2 focus:outline-none bg-white text-black"
+                    style={{ fontFamily: "Consolas, monospace" }}
+                  />
                 </div>
               </div>
             </Resizable>
