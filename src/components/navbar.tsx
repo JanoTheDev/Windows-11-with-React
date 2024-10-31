@@ -1,3 +1,5 @@
+"use client";
+
 import { atom, useAtom } from "jotai";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -8,6 +10,7 @@ export interface appInterface {
   position: { x: number; y: number };
   name: string;
   link: string;
+  zIndex: number;
 }
 
 export const AppsAtoms = atom<appInterface[]>([]);
@@ -17,9 +20,7 @@ export default function Navbar() {
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
 
-  const [, setLastBroughtToFront] = useAtom(
-    lastBroughtToFrontAtom
-  );
+  const [, setLastBroughtToFront] = useAtom(lastBroughtToFrontAtom);
 
   useEffect(() => {
     const updateDateTime = () => {
@@ -31,19 +32,18 @@ export default function Navbar() {
     const intervalId = setInterval(updateDateTime, 1000);
 
     return () => clearInterval(intervalId);
-  }, [time, date]); // Added dependencies for the useEffect
+  }, [time, date]);
 
   const handleAppClick = (id: number) => {
     setLastBroughtToFront(id);
-    const updatedApps = apps.map((app) =>
-      app.id === id
-        ? {
-            ...app,
-            position: { x: app.position.x, y: app.position.y },
-          }
-        : app
-    );
-    setApps(updatedApps);
+    setApps((prevApps) => {
+      const maxZIndex = Math.max(...prevApps.map((app) => app.zIndex), 1000);
+      return prevApps.map((app) =>
+        app.id === id
+          ? { ...app, zIndex: maxZIndex + 1 }
+          : app
+      );
+    });
   };
 
   return (
