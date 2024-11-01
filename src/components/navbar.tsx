@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { atom, useAtom } from "jotai";
 import Image from "next/image";
-import { lastBroughtToFrontAtom } from "./notepad";
 
 export interface AppInterface {
   id: number;
@@ -12,6 +11,8 @@ export interface AppInterface {
   link: string;
   zIndex: number;
 }
+
+export const lastBroughtToFrontAtom = atom<number | null>(null);
 
 export const AppsAtoms = atom<AppInterface[]>([]);
 

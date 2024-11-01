@@ -2,13 +2,13 @@
 
 import React from "react";
 import Navbar from "../components/navbar";
-import NotePad from "@/components/notepad";
+import NotePad from "@/components/apps/notepad";
 import FileExplorer from "@/components/file-explorer";
-import RecycleBin from "@/components/recycle-bin";
-import Folder from "@/components/folder";
+import RecycleBin from "@/components/apps/recycle-bin";
+import Folder from "@/components/apps/folder";
 import { useAtom } from "jotai";
 import { AppsAtoms } from "@/components/navbar";
-import FileExplore from "@/components/file explorer";
+import FileExplore from "@/components/apps/file explorer";
 
 export default function Home() {
   // const [apps] = useAtom(AppsAtoms);

@@ -2,16 +2,16 @@
 
 import React, { useCallback, useState } from "react";
 import { Folder as FolderIcon } from "lucide-react";
-import { AppsAtoms } from "./navbar";
+import { AppsAtoms } from "../navbar";
 import { useAtom } from "jotai";
-import FileExplorer from "./file-explorer";
+import FileExplorer from "../file-explorer";
 
 interface FolderProps {
   id: number;
   name: string;
 }
 
-const FileExplore: React.FC<FolderProps> = ({ id, name }) => {
+const Folder: React.FC<FolderProps> = ({ id, name }) => {
   const [apps, setApps] = useAtom(AppsAtoms);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -52,4 +52,4 @@ const FileExplore: React.FC<FolderProps> = ({ id, name }) => {
   );
 }
 
-export default FileExplore;
+export default Folder;

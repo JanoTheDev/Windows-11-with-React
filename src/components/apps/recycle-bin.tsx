@@ -1,24 +1,23 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
-import { Folder as FolderIcon } from "lucide-react";
-import { AppsAtoms } from "./navbar";
+import Image from "next/image";
+import { AppsAtoms } from "../navbar";
 import { useAtom } from "jotai";
-import FileExplorer from "./file-explorer";
+import FileExplorer from "../file-explorer";
 
-interface FolderProps {
+interface RecycleBinProps {
   id: number;
-  name: string;
 }
 
-const Folder: React.FC<FolderProps> = ({ id, name }) => {
+const RecycleBin: React.FC<RecycleBinProps> = ({ id }) => {
   const [apps, setApps] = useAtom(AppsAtoms);
   const [isOpen, setIsOpen] = useState(false);
 
-  const openFolder = useCallback(() => {
+  const openRecycleBin = useCallback(() => {
     setIsOpen(true);
     if (apps) {
-      setApps((prev) =>
+      setApps((prev) => 
         prev.some((app) => app.id === id)
           ? prev
           : [
@@ -26,30 +25,36 @@ const Folder: React.FC<FolderProps> = ({ id, name }) => {
               {
                 id,
                 position: { x: id * 20, y: id * 20 },
-                name: name,
+                name: "Recycle Bin",
                 link: "https://i.postimg.cc/pVqg4GQr/file-explorer-folder-libraries-icon-18298.png",
                 zIndex: Math.max(...prev.map((app) => app.zIndex), 1000) + 1,
               },
             ]
       );
     }
-  }, [id, name, apps, setApps]);
+  }, [id, apps, setApps]);
 
   return (
     <>
       <button
-        onDoubleClick={openFolder}
+        onDoubleClick={openRecycleBin}
         className="w-[70px] px-1 py-2 focus:outline-none focus:bg-white rounded-md focus:bg-opacity-20 text-white hover:bg-white hover:bg-opacity-20"
-        aria-label={`Open ${name} folder`}
+        aria-label="Open Recycle Bin"
       >
         <div className="flex flex-col items-center justify-between">
-          <FolderIcon size={30} className="mb-1 text-yellow-500" />
+          <Image
+            src="https://i.postimg.cc/qRXqUxXC/Recycle-Bin.png"
+            alt="Recycle Bin"
+            width={30}
+            height={30}
+            className="mb-1"
+          />
         </div>
-        <p className="text-white text-[15px] text-center">{name}</p>
+        <p className="text-white text-[15px] text-center">Recycle Bin</p>
       </button>
-      {isOpen && <FileExplorer id={id} initialFolder={name.toLowerCase()} />}
+      {isOpen && <FileExplorer id={id} initialFolder="recycle-bin" />}
     </>
   );
 }
 
-export default Folder;
+export default RecycleBin;

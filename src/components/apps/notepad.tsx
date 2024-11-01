@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import Draggable from "react-draggable";
 import { Resizable, Enable } from "re-resizable"; // Import the correct type for Enable
 import { Maximize2, Minimize2, X, Plus } from "lucide-react";
-import { AppsAtoms } from "./navbar";
+import { AppsAtoms, lastBroughtToFrontAtom } from "../navbar";
 import { atom, useAtom } from "jotai";
 import Image from "next/image";
 
@@ -15,8 +15,6 @@ interface Tab {
   title: string;
   content: string;
 }
-
-export const lastBroughtToFrontAtom = atom<number | null>(null);
 
 export default function NotePad({ id }: NotePadProps) {
   const [isOpen, setIsOpen] = useState(false);

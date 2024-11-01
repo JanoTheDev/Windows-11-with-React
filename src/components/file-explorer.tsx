@@ -14,7 +14,7 @@ import {
   Image as ImageIcon,
   Trash2,
 } from "lucide-react";
-import { AppsAtoms } from "./navbar";
+import { AppsAtoms, lastBroughtToFrontAtom } from "./navbar";
 import { atom, useAtom } from "jotai";
 import Image from "next/image";
 
@@ -29,8 +29,6 @@ interface FileSystemItem {
   type: "folder" | "file";
   children?: FileSystemItem[];
 }
-
-export const lastBroughtToFrontAtom = atom<number | null>(null);
 
 const FileExplorer: React.FC<FileExplorerProps> = ({
   id,
@@ -157,6 +155,17 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       });
     }
   }, [id, apps, setApps]);
+
+  useEffect(() => {
+    if (lastBroughtToFront === id) {
+      const appToUpdate = apps.find((app) => app.id === id);
+      if (appToUpdate) {
+        setPosition(appToUpdate.position);
+        setZIndex(appToUpdate.zIndex);
+      }
+      setLastBroughtToFront(null);
+    }
+  }, [id, apps, lastBroughtToFront, setLastBroughtToFront]);
 
   const closePopup = useCallback(() => {
     setApps((prev) => prev.filter((app) => app.id !== id));
