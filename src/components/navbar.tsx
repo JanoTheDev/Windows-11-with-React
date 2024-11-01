@@ -1,11 +1,11 @@
 "use client";
 
+import React, { useEffect, useState, useCallback } from "react";
 import { atom, useAtom } from "jotai";
 import Image from "next/image";
-import { useEffect, useState } from "react";
 import { lastBroughtToFrontAtom } from "./notepad";
 
-export interface appInterface {
+export interface AppInterface {
   id: number;
   position: { x: number; y: number };
   name: string;
@@ -13,13 +13,12 @@ export interface appInterface {
   zIndex: number;
 }
 
-export const AppsAtoms = atom<appInterface[]>([]);
+export const AppsAtoms = atom<AppInterface[]>([]);
 
 export default function Navbar() {
   const [apps, setApps] = useAtom(AppsAtoms);
   const [time, setTime] = useState("");
   const [date, setDate] = useState("");
-
   const [, setLastBroughtToFront] = useAtom(lastBroughtToFrontAtom);
 
   useEffect(() => {
@@ -34,7 +33,7 @@ export default function Navbar() {
     return () => clearInterval(intervalId);
   }, [time, date]);
 
-  const handleAppClick = (id: number) => {
+  const handleAppClick = useCallback((id: number) => {
     setLastBroughtToFront(id);
     setApps((prevApps) => {
       const maxZIndex = Math.max(...prevApps.map((app) => app.zIndex), 1000);
@@ -44,7 +43,7 @@ export default function Navbar() {
           : app
       );
     });
-  };
+  }, [setLastBroughtToFront, setApps]);
 
   return (
     <div className="bg-blue-950 bg-opacity-30 backdrop-blur-md w-screen h-[50px] fixed bottom-0">
@@ -86,28 +85,27 @@ export default function Navbar() {
           </div>
 
           {/* Apps Display */}
-          {apps &&
-            apps.map((data: appInterface, i: number) => (
-              <div
-                onClick={() => handleAppClick(data.id)}
-                key={i}
-                className="flex justify-center items-center hover:rounded hover:bg-white hover:bg-opacity-20 h-[45px] w-[45px] transition-all duration-200 relative overflow-hidden mx-1"
-              >
-                <Image
-                  src={data.link}
-                  alt={data.name}
-                  width={20}
-                  height={20}
-                  style={{
-                    objectFit: "contain",
-                    position: "absolute",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%) scale(1)",
-                  }}
-                />
-              </div>
-            ))}
+          {apps.map((data: AppInterface) => (
+            <div
+              onClick={() => handleAppClick(data.id)}
+              key={data.id}
+              className="flex justify-center items-center hover:rounded hover:bg-white hover:bg-opacity-20 h-[45px] w-[45px] transition-all duration-200 relative overflow-hidden mx-1"
+            >
+              <Image
+                src={data.link}
+                alt={data.name}
+                width={20}
+                height={20}
+                style={{
+                  objectFit: "contain",
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%) scale(1)",
+                }}
+              />
+            </div>
+          ))}
         </div>
 
         {/* Right Aligned Time Display */}
